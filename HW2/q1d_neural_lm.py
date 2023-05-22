@@ -82,28 +82,18 @@ def lm_wrapper(in_word_index, out_word_index, num_to_word_embedding, dimensions,
 
     # Construct the data batch and run you backpropogation implementation
     ### YOUR CODE HERE
-    from tqdm import tqdm
-    cost, grad = 0.0, np.zeros(params.shape)
-
-    in_word_index = np.array(in_word_index)
-    out_word_index = np.array(out_word_index)
-    num_to_word_embedding = np.array(num_to_word_embedding)
-
-    batch = np.random.randint(len(in_word_index)//BATCH_SIZE)
-    data = num_to_word_embedding[in_word_index[batch * BATCH_SIZE: (batch + 1) * BATCH_SIZE]]
-    # vectorize the labels
-    labels = np.vectorize(int_to_one_hot)(out_word_index[batch * BATCH_SIZE: (batch + 1) * BATCH_SIZE], output_dim)
-    assert data.shape == (BATCH_SIZE, input_dim)
-
-    assert labels.shape == (BATCH_SIZE, output_dim)
-    c, g = forward_backward_prop(data, labels, params, dimensions)
-    cost += c
-    grad += g
+    indices = np.random.randint(0, high=len(in_word_index), size=BATCH_SIZE) # random start to the batch
+    data = [num_to_word_embedding[in_word_index[i]] for i in indices]
+    data = np.stack(data, axis=0)
+    
+    labels[np.arange(BATCH_SIZE), [out_word_index[i] for i in indices]] = 1.0
+    cost, grad = forward_backward_prop(data, labels, params, dimensions)
 
     ### END YOUR CODE
 
     cost /= BATCH_SIZE
     grad /= BATCH_SIZE
+
     return cost, grad
 
 
@@ -118,15 +108,11 @@ def eval_neural_lm(eval_data_path):
 
     perplexity = 0
     ### YOUR CODE HERE
-    # perplexity = np.exp(-1 * np.sum(np.log2(probabilities)) / num_of_examples)
     probabilities = []
     for i in range(num_of_examples):
-        in_word = in_word_index[i]
-        out_word = out_word_index[i]
-        in_word_embedding = num_to_word_embedding[in_word]
-        out_word_embedding = num_to_word_embedding[out_word]
-        probabilities.append(forward(in_word_embedding, out_word_embedding, params, dimensions))
-    perplexity = np.exp(-1 * np.sum(np.log2(probabilities)) / num_of_examples)
+        in_word_embedding = np.array(num_to_word_embedding[in_word_index[i]]).reshape(1, -1)
+        probabilities.append(forward(in_word_embedding, np.array(out_word_index[i]).reshape(1, -1), params, dimensions))
+    perplexity = np.exp(-1 * np.sum(np.log(probabilities)) / num_of_examples)
     ### END YOUR CODE
 
     return perplexity

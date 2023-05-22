@@ -51,7 +51,6 @@ def forward_backward_prop(data, labels, params, dimensions):
     dimensions -- A tuple of input dimension, number of hidden units
                   and output dimension
     """
-
     # Unpack network parameters (do not modify)
     ofs = 0
     Dx, H, Dy = (dimensions[0], dimensions[1], dimensions[2])
@@ -68,7 +67,8 @@ def forward_backward_prop(data, labels, params, dimensions):
     a = data@W1 + b1
     h = sigmoid(a)
     y_hat = softmax(h@W2 + b2)
-    probs = forward(data, labels, params, dimensions)
+    indices = labels.argmax(axis=1)
+    probs = y_hat[np.arange(len(y_hat)), indices]
     ### END YOUR CODE
 
     ### YOUR CODE HERE: backward propagation
@@ -82,7 +82,6 @@ def forward_backward_prop(data, labels, params, dimensions):
     gradb1 = grad_sigmoid.sum(axis=0)
     gradW1 = np.einsum('dn,nh->dh', data.T, grad_sigmoid)
     ### END YOUR CODE
-
     # Stack gradients (do not modify)
     grad = np.concatenate((gradW1.flatten(), gradb1.flatten(),
         gradW2.flatten(), gradb2.flatten()))
