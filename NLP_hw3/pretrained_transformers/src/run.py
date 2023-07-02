@@ -129,8 +129,36 @@ elif args.function == 'finetune':
     #         writer=writer
     #     You can use the args.reading_params_path flag to switch between the
     #     number of epochs for each case.
-     
-    raise NotImplementedError
+
+    # goal 1 - load params
+    if args.reading_params_path is not None:
+      model.load_state_dict(torch.load(args.reading_params_path))
+    
+    # goal 2 - finetune model
+    # get dataset
+    train_dataset = dataset.NameDataset(
+                      pretrain_dataset, 
+                      args.finetune_corpus_path
+                    )
+    # define hyperparameters:
+    hyperparams = {
+      "max_epochs": 75,
+      "batch_size": 256,
+      "learning_rate": args.finetune_lr,
+      "lr_decay": True,
+      "warmup_tokens": 512*20,
+      "final_tokens": 200*len(pretrain_dataset)*block_size,
+      "num_workers": 4,
+      "writer": writer
+    }
+    # finetune
+    tconf = trainer.TrainerConfig(**hyperparams)
+    trainer = trainer.Trainer(model, train_dataset, None, tconf)
+    trainer.train()
+
+    # goal 3 - save the model
+    torch.save(model.state_dict(), args.writing_params_path)
+
 elif args.function == 'evaluate':
     assert args.outputs_path is not None
     assert args.reading_params_path is not None
