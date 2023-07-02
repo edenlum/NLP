@@ -136,10 +136,9 @@ elif args.function == 'finetune':
     
     # goal 2 - finetune model
     # get dataset
-    train_dataset = dataset.NameDataset(
-                      pretrain_dataset, 
-                      args.finetune_corpus_path
-                    )
+    with open(args.finetune_corpus_path, "r") as f:
+      data = f.read()
+    train_dataset = dataset.NameDataset(pretrain_dataset, data)
     # define hyperparameters:
     hyperparams = {
       "max_epochs": 75,
