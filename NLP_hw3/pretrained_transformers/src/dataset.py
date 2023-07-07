@@ -178,8 +178,8 @@ class CharCorruptionDataset(Dataset):
         size = len(document) # document could be smaller than size to begin with
 
         # part 2 break into 3 parts
-        mask_size = size//4 # random.randint(round((size/4)*0.5), round((size/4)*1.5))
-        mask_start = mask_size # random.randint(0, size - mask_size)
+        mask_size = random.randint(round((size/4)*0.5), round((size/4)*1.5))
+        mask_start = random.randint(0, size - mask_size)
         prefix = document[: mask_start]
         masked_content = document[mask_start: mask_start + mask_size]
         suffix = document[mask_start + mask_size:]
@@ -187,19 +187,8 @@ class CharCorruptionDataset(Dataset):
         # part 3 Rearrange these substrings into the following form:
         pad_length = self.block_size - size - 2
         masked_string = prefix + self.MASK_CHAR + suffix + self.MASK_CHAR\
-          + masked_content
-        if self.block_size != pad_length + len(masked_string):
-          print("\n", document, len(document))
-          print(f"all: {len(masked_string)} mask: {len(masked_content)} prefix: {len(prefix)} suffix: {len(suffix)} \n pad: {pad_length}")
-          print(f"size {size}")
-          print(f"size, start {mask_size, mask_start}")
-          assert True
-        masked_string += self.PAD_CHAR * pad_length
-        if (len(masked_string) != self.block_size):
-          print(f"all: {len(masked_string)} mask: {len(masked_content)} prefix: {len(prefix)} suffix: {len(suffix)}")
-
-        assert (len(masked_string) == self.block_size)
-
+          + masked_content + self.PAD_CHAR * pad_length
+        
         # part 4 input output from masked string
         input_str = masked_string[:-1]
         output_str = masked_string[1:]
