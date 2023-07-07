@@ -175,10 +175,11 @@ class CharCorruptionDataset(Dataset):
         # part 1 Randomly truncate
         size = random.randint(4, int(self.block_size*7/8))
         document = document[: size]
+        size = len(document) # document could be smaller than size to begin with
 
         # part 2 break into 3 parts
-        mask_size = random.randint(round((size/4)*0.5), round((size/4)*1.5))
-        mask_start = random.randint(0, size - mask_size)
+        mask_size = size//4 # random.randint(round((size/4)*0.5), round((size/4)*1.5))
+        mask_start = mask_size # random.randint(0, size - mask_size)
         prefix = document[: mask_start]
         masked_content = document[mask_start: mask_start + mask_size]
         suffix = document[mask_start + mask_size:]
@@ -186,8 +187,19 @@ class CharCorruptionDataset(Dataset):
         # part 3 Rearrange these substrings into the following form:
         pad_length = self.block_size - size - 2
         masked_string = prefix + self.MASK_CHAR + suffix + self.MASK_CHAR\
-          + masked_content + (self.PAD_CHAR) * pad_length
-        
+          + masked_content
+        if self.block_size != pad_length + len(masked_string):
+          print("\n", document, len(document))
+          print(f"all: {len(masked_string)} mask: {len(masked_content)} prefix: {len(prefix)} suffix: {len(suffix)} \n pad: {pad_length}")
+          print(f"size {size}")
+          print(f"size, start {mask_size, mask_start}")
+          assert True
+        masked_string += self.PAD_CHAR * pad_length
+        if (len(masked_string) != self.block_size):
+          print(f"all: {len(masked_string)} mask: {len(masked_content)} prefix: {len(prefix)} suffix: {len(suffix)}")
+
+        assert (len(masked_string) == self.block_size)
+
         # part 4 input output from masked string
         input_str = masked_string[:-1]
         output_str = masked_string[1:]
@@ -221,7 +233,7 @@ if __name__ == '__main__':
         pass
     elif args.dataset_type == 'charcorruption':
         corruption_dataset = CharCorruptionDataset(open('wiki.txt', encoding='utf-8').read(), 128)
-        for _, example in zip(range(4), corruption_dataset):
+        for _, example in zip(range(100), corruption_dataset):
             x, y = example
             print('x:', ''.join([corruption_dataset.itos[int(c)] for c in x]))
             print('y:', ''.join([corruption_dataset.itos[int(c)] for c in y]))

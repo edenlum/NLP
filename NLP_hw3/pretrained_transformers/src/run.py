@@ -100,7 +100,7 @@ if args.function == 'pretrain':
       "lr_decay": True,
       "warmup_tokens": 512*20,
       "final_tokens": 200*len(pretrain_dataset)*block_size,
-      "num_workers": 4,
+      "num_workers": 1,
       "writer": writer
     }
 
