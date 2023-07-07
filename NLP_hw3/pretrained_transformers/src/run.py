@@ -93,7 +93,26 @@ if args.function == 'pretrain':
     # final_tokens=200*len(pretrain_dataset)*block_size
     # num_workers=4
     # writer=writer 
-    raise NotImplementedError
+    hyperparams = {
+      "max_epochs": 650,
+      "batch_size": 128,
+      "learning_rate": args.finetune_lr,
+      "lr_decay": True,
+      "warmup_tokens": 512*20,
+      "final_tokens": 200*len(pretrain_dataset)*block_size,
+      "num_workers": 4,
+      "writer": writer
+    }
+
+    # goal 1 - pretrain
+    tconf = trainer.TrainerConfig(**hyperparams)
+    trainer = trainer.Trainer(model, pretrain_dataset, None, tconf)
+    trainer.train()
+
+    # goal 2 - save the model
+    torch.save(model.state_dict(), args.writing_params_path)
+    
+    
 elif args.function == 'finetune':
     assert args.writing_params_path is not None
     assert args.finetune_corpus_path is not None
@@ -133,23 +152,35 @@ elif args.function == 'finetune':
     # goal 1 - load params
     if args.reading_params_path is not None:
       model.load_state_dict(torch.load(args.reading_params_path))
-    
+      # define hyperparameters:
+      hyperparams = {
+        "max_epochs": 10,
+        "batch_size": 256,
+        "learning_rate": args.finetune_lr,
+        "lr_decay": True,
+        "warmup_tokens": 512*20,
+        "final_tokens": 200*len(pretrain_dataset)*block_size,
+        "num_workers": 4,
+        "writer": writer
+    }
+    else:
+      # define hyperparameters:
+      hyperparams = {
+        "max_epochs": 75,
+        "batch_size": 256,
+        "learning_rate": args.finetune_lr,
+        "lr_decay": True,
+        "warmup_tokens": 512*20,
+        "final_tokens": 200*len(pretrain_dataset)*block_size,
+        "num_workers": 4,
+        "writer": writer
+      }
     # goal 2 - finetune model
     # get dataset
     with open(args.finetune_corpus_path, "r") as f:
       data = f.read()
     train_dataset = dataset.NameDataset(pretrain_dataset, data)
-    # define hyperparameters:
-    hyperparams = {
-      "max_epochs": 75,
-      "batch_size": 256,
-      "learning_rate": args.finetune_lr,
-      "lr_decay": True,
-      "warmup_tokens": 512*20,
-      "final_tokens": 200*len(pretrain_dataset)*block_size,
-      "num_workers": 4,
-      "writer": writer
-    }
+    
     # finetune
     tconf = trainer.TrainerConfig(**hyperparams)
     trainer = trainer.Trainer(model, train_dataset, None, tconf)
